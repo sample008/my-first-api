@@ -1,18 +1,22 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 import uvicorn
 
-# 1. We build the building
 app = FastAPI()
 
-# 2. We open a specific window (the URL path)
+# 1. We define our VIP Pass (In reality, Stripe generates this)
+VALID_API_KEY = "sk_live_super_secret_123"
+
+# 2. We tell the function to look for an "api-key" in the hidden Headers
 @app.get("/calculate")
-def calculate_revenue(price: float, customers: int):
-    total = price * customers
+def calculate_revenue(price: float, customers: int, api_key: str = Header(None)):
     
-    # Notice we use curly brackets here. This formats the answer 
-    # into a language that other computers (and APIs) easily understand.
+    # 3. THE BOUNCER: If the key doesn't match, kick them out!
+    if api_key != VALID_API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing API Key")
+    
+    # If the bouncer lets them through, do the math:
+    total = price * customers
     return {"price": price, "customers": customers, "total_revenue": total}
 
-# 3. We turn on the "Open" sign so the server starts
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
